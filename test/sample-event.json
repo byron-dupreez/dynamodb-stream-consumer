@@ -1,0 +1,94 @@
+{
+  "Records": [
+    {
+      "eventID": "00263226ed26e013ddad4bde97ad045d",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-west-2",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1484910060,
+        "Keys": {
+          "id": {
+            "S": "f52e7632-99c0-42e5-8a27-dfc7b5132967"
+          }
+        },
+        "NewImage": {
+          "company": {
+            "S": "Acme1"
+          },
+          "id": {
+            "S": "f52e7632-99c0-42e5-8a27-dfc7b5132967"
+          },
+          "updated": {
+            "S": "2017-01-20T11:01:10.954Z"
+          }
+        },
+        "SequenceNumber": "498769100000000003688843165",
+        "SizeBytes": 119,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-west-2:111111111111:table/IE_Company/stream/2016-10-24T18:14:40.531"
+    },
+    {
+      "eventID": "e6195ebd60141d27a58284b70491a940",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-west-2",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1484910060,
+        "Keys": {
+          "id": {
+            "S": "8aef55fa-c052-4ada-a17c-af98e9307118"
+          }
+        },
+        "NewImage": {
+          "company": {
+            "S": "CoCo1"
+          },
+          "id": {
+            "S": "8aef55fa-c052-4ada-a17c-af98e9307118"
+          },
+          "updated": {
+            "S": "2017-01-20T11:01:10.955Z"
+          }
+        },
+        "SequenceNumber": "498769200000000003688843199",
+        "SizeBytes": 119,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-west-2:111111111111:table/IE_Company/stream/2016-10-24T18:14:40.531"
+    },
+    {
+      "eventID": "79e772e60f6bb50018f213d816f51a32",
+      "eventName": "INSERT",
+      "eventVersion": "1.1",
+      "eventSource": "aws:dynamodb",
+      "awsRegion": "us-west-2",
+      "dynamodb": {
+        "ApproximateCreationDateTime": 1484910060,
+        "Keys": {
+          "id": {
+            "S": "e1f0063d-d405-40f2-a106-2980276a88ae"
+          }
+        },
+        "NewImage": {
+          "company": {
+            "S": "TestCo1"
+          },
+          "id": {
+            "S": "e1f0063d-d405-40f2-a106-2980276a88ae"
+          },
+          "updated": {
+            "S": "2017-01-20T11:01:10.955Z"
+          }
+        },
+        "SequenceNumber": "498769300000000003688843200",
+        "SizeBytes": 121,
+        "StreamViewType": "NEW_AND_OLD_IMAGES"
+      },
+      "eventSourceARN": "arn:aws:dynamodb:us-west-2:111111111111:table/IE_Company/stream/2016-10-24T18:14:40.531"
+    }
+  ]
+}

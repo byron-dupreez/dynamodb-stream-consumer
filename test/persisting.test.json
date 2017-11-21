@@ -1,0 +1,117 @@
+{
+  "Item": {
+    "streamConsumerId": "D|MyTable_DEV/2016-10-24T18:14:40.531|my-function:dev",
+    "batchState": {
+      "alls": {
+        "processAll": {
+          "began": "2017-03-18T11:01:49.706Z",
+          "subTasks": [],
+          "total": 1,
+          "name": "processAll",
+          "state": {
+            "type": "Completed",
+            "name": "Completed"
+          },
+          "executable": true,
+          "attempts": 1
+        }
+      }
+    },
+    "shardOrEventID": "E|E003",
+    "unusableRecordStates": [{
+      "discards": {
+        "discardUnusableRecord": {
+          "began": "2017-03-18T11:01:49.707Z",
+          "subTasks": [],
+          "total": 1,
+          "name": "discardUnusableRecord",
+          "state": {
+            "type": "Completed",
+            "name": "Completed"
+          },
+          "executable": true,
+          "attempts": 1
+        }
+      },
+      "record": {
+        "badApple": true
+      },
+      "reasonUnusable": "Bad apple"
+    }, {
+      "eventID": "E003",
+      "discards": {
+        "discardUnusableRecord": {
+          "began": "2017-03-18T11:01:49.707Z",
+          "subTasks": [],
+          "total": 1,
+          "name": "discardUnusableRecord",
+          "state": {
+            "type": "Completed",
+            "name": "Completed"
+          },
+          "executable": true,
+          "attempts": 1
+        }
+      },
+      "eventSeqNo": "10000000000000003",
+      "reasonUnusable": "Unparseable"
+    }],
+    "messageStates": [{
+      "eventID": "E001",
+      "seqNo": "eventSeqNo:10000000000000001",
+      "eventSeqNo": "10000000000000001",
+      "id": "k1:ABC|k2:10|eventSeqNo:10000000000000001",
+      "ones": {
+        "processOne": {
+          "began": "2017-03-18T11:01:49.701Z",
+          "subTasks": [],
+          "total": 1,
+          "name": "processOne",
+          "state": {
+            "type": "Completed",
+            "name": "Completed"
+          },
+          "executable": true,
+          "attempts": 1
+        }
+      },
+      "key": "k1:ABC|k2:10"
+    }, {
+      "eventID": "E002",
+      "discards": {
+        "discardRejectedMessage": {
+          "began": "2017-03-18T11:01:49.710Z",
+          "subTasks": [],
+          "total": 1,
+          "name": "discardRejectedMessage",
+          "state": {
+            "type": "Completed",
+            "name": "Completed"
+          },
+          "executable": true,
+          "attempts": 1
+        }
+      },
+      "seqNo": "eventSeqNo:10000000000000002",
+      "eventSeqNo": "10000000000000002",
+      "id": "k1:ABC|k2:10|eventSeqNo:10000000000000002",
+      "ones": {
+        "processOne": {
+          "began": "2017-03-18T11:01:49.704Z",
+          "subTasks": [],
+          "total": 1,
+          "name": "processOne",
+          "state": {
+            "reason": "We're NOT gonna take it!",
+            "type": "Rejected",
+            "name": "Rejected",
+            "error": "Error: Twisted"
+          },
+          "executable": true,
+          "attempts": 1
+        }
+      },
+      "key": "k1:ABC|k2:10"
+    }]
+  }
+}

@@ -1,0 +1,253 @@
+'use strict';
+
+/**
+ * Unit tests for testing the configuration aspects of aws-stream-consumer/dynamo-consumer.js
+ * @author Byron du Preez
+ */
+
+const test = require('tape');
+
+// The test subject
+const dynamoConsumer = require('../dynamo-consumer');
+const dynamoProcessing = require('../dynamo-processing');
+
+const logging = require('logging-utils');
+
+const persisting = require('aws-stream-consumer/persisting');
+
+const Settings = require('aws-stream-consumer/settings');
+const StreamType = Settings.StreamType;
+
+// External dependencies
+const regions = require('aws-core-utils/regions');
+const stages = require('aws-core-utils/stages');
+const kinesisCache = require('aws-core-utils/kinesis-cache');
+const dynamoDBDocClientCache = require('aws-core-utils/dynamodb-doc-client-cache');
+
+// const Strings = require('core-functions/strings');
+// const stringify = Strings.stringify;
+
+// Testing dependencies
+const samples = require('./samples');
+
+function sampleAwsEvent(tableName, timestamp, omitEventSourceARN) {
+  const region = process.env.AWS_REGION;
+  timestamp = timestamp ? timestamp : '2017-02-22T12:07:00Z';
+  const eventSourceArn = omitEventSourceARN ? undefined : samples.sampleDynamoDBEventSourceArn(region, tableName, timestamp);
+  return samples.awsDynamoDBUpdateSampleEvent(eventSourceArn);
+}
+
+function sampleAwsContext(functionVersion, functionAlias) {
+  const region = process.env.AWS_REGION;
+  const functionName = 'sampleFunctionName';
+  const invokedFunctionArn = samples.sampleInvokedFunctionArn(region, functionName, functionAlias);
+  return samples.sampleAwsContext(functionName, functionVersion, invokedFunctionArn);
+}
+
+function checkDependencies(t, context, stdSettings, stdOptions, event, awsContext, expectedStage) {
+  t.ok(logging.isLoggingConfigured(context), `logging must be configured`);
+  t.ok(stages.isStageHandlingConfigured(context), `stage handling must be configured`);
+  t.ok(context.stageHandling && typeof context.stageHandling === 'object', 'context.stageHandling must be configured');
+  t.ok(context.custom && typeof context.custom === 'object', `context.custom must be configured`);
+  t.ok(dynamoProcessing.isStreamProcessingConfigured(context), 'stream processing must be configured');
+  t.ok(context.streamProcessing && typeof context.streamProcessing === 'object', 'context.streamProcessing must be configured');
+
+  const kinesisOptions = stdSettings && stdSettings.kinesisOptions ? stdSettings.kinesisOptions :
+    stdOptions && stdOptions.kinesisOptions ? stdOptions.kinesisOptions : undefined;
+
+  const dynamoDBDocClientOptions = stdSettings && stdSettings.dynamoDBDocClientOptions ? stdSettings.dynamoDBDocClientOptions :
+    stdOptions && stdOptions.dynamoDBDocClientOptions ? stdOptions.dynamoDBDocClientOptions : undefined;
+
+  // Check Kinesis instance is also configured
+  const region = regions.getRegion();
+  if (kinesisOptions) {
+    t.ok(context.kinesis && typeof context.kinesis === 'object', 'context.kinesis must be configured');
+    t.equal(context.kinesis.config.region, region, `context.kinesis.config.region (${context.kinesis.config.region}) must be ${region}`);
+    t.equal(context.kinesis.config.maxRetries, kinesisOptions.maxRetries, `context.kinesis.config.maxRetries (${context.kinesis.config.maxRetries}) must be ${kinesisOptions.maxRetries}`);
+  } else {
+    t.notOk(context.kinesis, 'context.kinesis must not be configured');
+  }
+
+  // Check DynamoDB DocumentClient instance is also configured
+  if (dynamoDBDocClientOptions) {
+    // Check DynamoDB.DocumentClient is also configured
+    t.ok(context.dynamoDBDocClient && typeof context.dynamoDBDocClient === 'object', 'context.dynamoDBDocClient must be configured');
+    t.equal(context.dynamoDBDocClient.service.config.region, region, `context.dynamoDBDocClient.service.config.region (${context.dynamoDBDocClient.service.config.region}) must be ${region}`);
+    t.equal(context.dynamoDBDocClient.service.config.maxRetries, dynamoDBDocClientOptions.maxRetries,
+      `context.dynamoDBDocClient.service.config.maxRetries (${context.dynamoDBDocClient.service.config.maxRetries}) must be ${dynamoDBDocClientOptions.maxRetries}`);
+  } else {
+    t.notOk(context.dynamoDBDocClient, 'context.dynamoDBDocClient must not be configured');
+  }
+
+  if (event && awsContext) {
+    t.equal(context.region, region, `context.region must be ${region}`);
+    t.equal(context.stage, expectedStage, `context.stage must be ${expectedStage}`);
+    t.equal(context.awsContext, awsContext, 'context.awsContext must be given AWS context');
+  }
+}
+
+function setRegionStageAndDeleteCachedInstances(region, stage) {
+  // Set up region
+  process.env.AWS_REGION = region;
+  // Set up stage
+  process.env.STAGE = stage;
+  // Remove any cached entries before configuring
+  deleteCachedInstances();
+  return region;
+}
+
+function deleteCachedInstances() {
+  const region = regions.getRegion();
+  kinesisCache.deleteKinesis(region);
+  dynamoDBDocClientCache.deleteDynamoDBDocClient(region);
+}
+
+// =====================================================================================================================
+// dynamoDBConsumer.isStreamConsumerConfigured with default DynamoDB options
+// =====================================================================================================================
+
+test('dynamoDBConsumer.isStreamConsumerConfigured with default DynamoDB options', t => {
+  try {
+    // Simulate a region in AWS_REGION for testing
+    const region = setRegionStageAndDeleteCachedInstances('us-west-2', undefined);
+
+    const context = {};
+    const options = dynamoProcessing.loadDynamoDBDefaultOptions();
+
+    // Must not be configured yet
+    t.notOk(dynamoConsumer.isStreamConsumerConfigured(context), `stream consumer must not be configured`);
+
+    // Generate a sample AWS event
+    const eventSourceARN = samples.sampleDynamoDBEventSourceArn(region, 'TestTable_QA');
+    const event = samples.awsDynamoDBUpdateSampleEvent(eventSourceARN);
+
+    // Generate a sample AWS context
+    const awsContext = sampleAwsContext('1.0.1', 'dev1');
+
+    // Now configure the stream consumer runtime settings
+    dynamoConsumer.configureStreamConsumer(context, undefined, options, event, awsContext);
+
+    // Must be configured now
+    t.ok(dynamoConsumer.isStreamConsumerConfigured(context), `stream consumer must be configured`);
+    checkDependencies(t, context, undefined, options, event, awsContext, 'dev1');
+
+    t.equal(context.streamProcessing.streamType, StreamType.dynamodb, `streamType must be dynamodb`);
+    t.equal(context.streamProcessing.sequencingRequired, true, `sequencingRequired must be true`);
+    t.equal(context.streamProcessing.batchStateTableName, Settings.defaults.batchStateTableName, `batchStateTableName must be '${Settings.defaults.batchStateTableName}'`);
+    t.equal(context.streamProcessing.saveBatchState, persisting.saveBatchStateToDynamoDB, `saveBatchState must be saveBatchStateToDynamoDB`);
+    t.equal(context.streamProcessing.loadBatchState, persisting.loadBatchStateFromDynamoDB, `loadBatchState must be loadBatchStateFromDynamoDB`);
+
+    t.ok(context.kinesis, `kinesis must be defined`);
+    t.ok(context.dynamoDBDocClient, `dynamoDBDocClient must be defined`);
+
+  } finally {
+    process.env.AWS_REGION = undefined;
+    process.env.STAGE = undefined;
+  }
+  t.end();
+});
+
+// =====================================================================================================================
+// dynamoDBConsumer.configureStreamConsumer with default DynamoDB options
+// =====================================================================================================================
+
+test('dynamoDBConsumer.configureStreamConsumer with default DynamoDB options must fail if missing region', t => {
+  try {
+    // Simulate NO region in AWS_REGION for testing
+    const region = setRegionStageAndDeleteCachedInstances('', undefined);
+    t.notOk(process.env.AWS_REGION, 'AWS region must be empty');
+
+    const context = {};
+    const options = dynamoProcessing.loadDynamoDBDefaultOptions();
+
+    // Generate a sample AWS event
+    const eventSourceARN = samples.sampleDynamoDBEventSourceArn('us-west-2', 'TestTable_QA');
+    const event = samples.awsDynamoDBUpdateSampleEvent(eventSourceARN);
+
+    // Generate a sample AWS context
+    const awsContext = sampleAwsContext('1.0.1', 'dev1');
+
+    try {
+      dynamoConsumer.configureStreamConsumer(context, undefined, options, event, awsContext);
+      t.fail(`dynamoDBConsumer.configureStreamConsumer should NOT have passed`);
+
+    } catch (err) {
+      t.pass(`dynamoDBConsumer.configureStreamConsumer must fail (${err})`);
+      const errMsgMatch = 'Failed to get AWS_REGION';
+      t.ok(err.message.indexOf(errMsgMatch) !== -1, `dynamoDBConsumer.configureStreamConsumer error should contain (${errMsgMatch})`);
+    }
+
+  } finally {
+    process.env.AWS_REGION = undefined;
+    process.env.STAGE = undefined;
+  }
+  t.end();
+});
+
+test('dynamoDBConsumer.configureStreamConsumer with default DynamoDB options must fail if missing stage', t => {
+  try {
+    // Simulate a region in AWS_REGION for testing
+    const region = setRegionStageAndDeleteCachedInstances('us-west-2', undefined);
+
+    const context = {};
+    const options = dynamoProcessing.loadDynamoDBDefaultOptions();
+
+    // Generate a sample AWS event
+    const eventSourceARN = samples.sampleDynamoDBEventSourceArn(region, 'TestTable');
+    const event = samples.awsDynamoDBUpdateSampleEvent(eventSourceARN);
+
+    // Generate a sample AWS context
+    const awsContext = sampleAwsContext('1.0.1', '1.0.1');
+
+    try {
+      dynamoConsumer.configureStreamConsumer(context, undefined, options, event, awsContext);
+      t.fail(`dynamoDBConsumer.configureStreamConsumer should NOT have passed`);
+
+    } catch (err) {
+      t.pass(`dynamoDBConsumer.configureStreamConsumer must fail (${err})`);
+      const errMsgMatch = 'Failed to resolve stage';
+      t.ok(err.message.indexOf(errMsgMatch) !== -1, `dynamoDBConsumer.configureStreamConsumer error should contain (${errMsgMatch})`);
+    }
+
+  } finally {
+    process.env.AWS_REGION = undefined;
+    process.env.STAGE = undefined;
+  }
+  t.end();
+});
+
+test('dynamoDBConsumer.configureStreamConsumer with default DynamoDB options & ideal conditions must pass', t => {
+  try {
+    // Simulate a region in AWS_REGION for testing
+    const region = setRegionStageAndDeleteCachedInstances('us-west-2', undefined);
+
+    const context = {};
+    const options = dynamoProcessing.loadDynamoDBDefaultOptions();
+
+    // Generate a sample AWS event
+    const eventSourceARN = samples.sampleDynamoDBEventSourceArn(region, 'TestTable_QA');
+    const event = samples.awsDynamoDBUpdateSampleEvent(eventSourceARN);
+
+    // Generate a sample AWS context
+    const awsContext = sampleAwsContext('1.0.1', 'dev1');
+
+    try {
+      // Simulate perfect conditions - everything meant to be configured beforehand has been configured as well
+      dynamoConsumer.configureStreamConsumer(context, undefined, options, event, awsContext);
+
+      t.pass(`dynamoDBConsumer.configureStreamConsumer should have passed`);
+
+      t.ok(dynamoProcessing.isStreamProcessingConfigured(context), 'DynamoDB stream processing must be configured');
+      t.ok(dynamoConsumer.isStreamConsumerConfigured(context), 'DynamoDB stream consumer must be configured');
+      checkDependencies(t, context, undefined, options, event, awsContext, 'dev1');
+
+    } catch (err) {
+      t.fail(`dynamoDBConsumer.configureStreamConsumer should NOT have failed (${err})`);
+    }
+
+  } finally {
+    process.env.AWS_REGION = undefined;
+    process.env.STAGE = undefined;
+  }
+  t.end();
+});

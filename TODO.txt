@@ -1,0 +1,16 @@
+========================================================================================================================
+TODO list
+========================================================================================================================
+
+1. Complete:
+    - dynamo-consumer.js
+    - default-dynamo-options.json
+
+2. Compare dynamodb modules against kinesis modules to identify fixes/patches/changes to be included
+
+3. Fix unit tests in:
+    - dynamo-consumer.test.js
+    - dynamo-consumer-config.test.js
+    - persisting.test.js
+
+4. Check all other unit tests too
