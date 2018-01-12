@@ -17,24 +17,24 @@ const LogLevel = logging.LogLevel;
 const log = logging.log;
 
 const dynamoProcessing = require('./dynamo-processing');
-const streamConsumer = require('aws-stream-consumer/stream-consumer');
+const streamConsumer = require('aws-stream-consumer-core/stream-consumer');
+const streamProcessing = require('aws-stream-consumer-core/stream-processing');
 
 /**
  * Utilities and functions to be used to robustly consume messages from an AWS DynamoDB event stream.
- * @module aws-stream-consumer/dynamo-consumer
+ * @module dynamodb-stream-consumer/dynamo-consumer
  * @author Byron du Preez
  */
 exports._$_ = '_$_'; //IDE workaround
 
-module.exports = {
-  // Configuration
-  isStreamConsumerConfigured: isStreamConsumerConfigured,
-  configureStreamConsumer: configureStreamConsumer,
-  generateHandlerFunction: generateHandlerFunction,
+// Configuration
+exports.isStreamConsumerConfigured = isStreamConsumerConfigured;
+exports.configureStreamConsumer = configureStreamConsumer;
+exports.generateHandlerFunction = generateHandlerFunction;
 
-  // Processing
-  processStreamEvent: processStreamEvent
-};
+// Processing
+exports.processStreamEvent = processStreamEvent;
+
 
 // =====================================================================================================================
 // DynamoDB stream consumer configuration - configures the runtime settings for a DynamoDB stream consumer on a given
@@ -94,19 +94,19 @@ function configureStreamConsumer(context, settings, options, event, awsContext) 
 /**
  * Generates a handler function for your DynamoDB stream consumer Lambda.
  *
- * @param {undefined|function(): (Object|StreamConsumerContext|StreamProcessing|StandardContext)} [generateContext] - a optional function that will be used to generate the initial context to be configured & used
- * @param {undefined|StreamConsumerSettings|function(): StreamConsumerSettings} [generateSettings] - an optional function that will be used to generate initial stream consumer settings to use; OR optional module-scoped stream consumer settings from which to copy initial stream consumer settings to use
- * @param {undefined|StreamConsumerOptions|function(): StreamConsumerOptions} [generateOptions] - an optional function that will be used to generate initial stream consumer options to use; OR optional module-scoped stream consumer options from which to copy initial stream consumer options to use
- * @param {undefined|function(): TaskDef[]} [generateProcessOneTaskDefs] - an "optional" function that must generate a new list of "processOne" task definitions, which will be subsequently used to generate the tasks to be executed on each message independently
- * @param {undefined|function(): TaskDef[]} [generateProcessAllTaskDefs] - an "optional" function that must generate a new list of "processAll" task definitions, which will be subsequently used to generate the tasks to be executed on all of the event's messages collectively
+ * @param {undefined|function(): (Object|StreamConsumerContext|StreamProcessing|StandardContext)} [createContext] - a optional function that will be used to generate the initial context to be configured & used
+ * @param {undefined|StreamConsumerSettings|function(): StreamConsumerSettings} [createSettings] - an optional function that will be used to generate initial stream consumer settings to use; OR optional module-scoped stream consumer settings from which to copy initial stream consumer settings to use
+ * @param {undefined|StreamConsumerOptions|function(): StreamConsumerOptions} [createOptions] - an optional function that will be used to generate initial stream consumer options to use; OR optional module-scoped stream consumer options from which to copy initial stream consumer options to use
+ * @param {undefined|function(): ProcessOneTaskDef[]} [defineProcessOneTasks] - an "optional" function that must generate a new list of "processOne" task definitions, which will be subsequently used to generate the tasks to be executed on each message independently
+ * @param {undefined|function(): ProcessAllTaskDef[]} [defineProcessAllTasks] - an "optional" function that must generate a new list of "processAll" task definitions, which will be subsequently used to generate the tasks to be executed on all of the event's messages collectively
  * @param {LogLevel|string|undefined} [logEventResultAtLogLevel] - an optional log level at which to log the AWS stream event
  * and result; if log level is undefined or invalid, then logs neither
  * @param {string|undefined} [failureMsg] - an optional message to log at error level on failure
  * @param {string|undefined} [successMsg] an optional message to log at info level on success
  * @returns {AwsLambdaHandlerFunction} a handler function for your stream consumer Lambda
  */
-function generateHandlerFunction(generateContext, generateSettings, generateOptions, generateProcessOneTaskDefs,
-  generateProcessAllTaskDefs, logEventResultAtLogLevel, failureMsg, successMsg) {
+function generateHandlerFunction(createContext, createSettings, createOptions, defineProcessOneTasks,
+  defineProcessAllTasks, logEventResultAtLogLevel, failureMsg, successMsg) {
 
   /**
    * A stream consumer Lambda handler function.
@@ -118,14 +118,14 @@ function generateHandlerFunction(generateContext, generateSettings, generateOpti
     let context = undefined;
     try {
       // Configure the context as a stream consumer context
-      context = typeof generateContext === 'function' ? generateContext() : {};
+      context = typeof createContext === 'function' ? createContext() : {};
 
       const deep = {deep: true};
-      const settings = typeof generateSettings === 'function' ? copy(generateSettings(), deep) :
-        generateSettings && typeof generateSettings === 'object' ? copy(generateSettings, deep) : undefined;
+      const settings = typeof createSettings === 'function' ? copy(createSettings(), deep) :
+        createSettings && typeof createSettings === 'object' ? copy(createSettings, deep) : undefined;
 
-      const options = typeof generateOptions === 'function' ? copy(generateOptions(), deep) :
-        generateOptions && typeof generateOptions === 'object' ? copy(generateOptions, deep) : undefined;
+      const options = typeof createOptions === 'function' ? copy(createOptions(), deep) :
+        createOptions && typeof createOptions === 'object' ? copy(createOptions, deep) : undefined;
 
       context = configureStreamConsumer(context, settings, options, event, awsContext);
 
@@ -135,8 +135,8 @@ function generateHandlerFunction(generateContext, generateSettings, generateOpti
       }
 
       // Generate the "process one" and/or "process all" task definitions using the given functions
-      const processOneTaskDefs = typeof generateProcessOneTaskDefs === 'function' ? generateProcessOneTaskDefs() : [];
-      const processAllTaskDefs = typeof generateProcessAllTaskDefs === 'function' ? generateProcessAllTaskDefs() : [];
+      const processOneTaskDefs = typeof defineProcessOneTasks === 'function' ? defineProcessOneTasks() : [];
+      const processAllTaskDefs = typeof defineProcessAllTasks === 'function' ? defineProcessAllTasks() : [];
 
       // Process the stream event with the generated "process one" and/or "process all" task definitions
       processStreamEvent(event, processOneTaskDefs, processAllTaskDefs, context)
@@ -179,9 +179,9 @@ function generateHandlerFunction(generateContext, generateSettings, generateOpti
  * the event.
  *
  * @param {DynamoDBEvent|*} event - the AWS DynamoDB stream event (or any other garbage passed as an event)
- * @param {TaskDef[]|undefined} [processOneTaskDefsOrNone] - an "optional" list of "processOne" task definitions that
+ * @param {ProcessOneTaskDef[]|undefined} [processOneTaskDefsOrNone] - an "optional" list of "processOne" task definitions that
  * will be used to generate the tasks to be executed on each message independently
- * @param {TaskDef[]|undefined} [processAllTaskDefsOrNone] - an "optional" list of "processAll" task definitions that
+ * @param {ProcessAllTaskDef[]|undefined} [processAllTaskDefsOrNone] - an "optional" list of "processAll" task definitions that
  * will be used to generate the tasks to be executed on all of the event's messages collectively
  * @param {StreamConsumerContext} context - the context to use with DynamoDB stream consumer configuration
  * @returns {Promise.<Batch|BatchError>} a promise that will resolve with the batch processed or reject with an error
