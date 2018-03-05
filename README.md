@@ -1,4 +1,4 @@
-# dynamodb-stream-consumer v0.0.0-alpha.1
+# dynamodb-stream-consumer v0.0.0-alpha.3
 
 Utilities for building robust AWS Lambda consumers of stream events from Amazon Web Services (AWS) DynamoDB streams.
 
