@@ -1,5 +1,9 @@
 ## Changes
 
+### 0.0.0-alpha.4
+- Updated `aws-core-utils` dependency to version 7.2.0
+- Updated `aws-stream-consumer-core` dependency to version 2.1.1
+
 ### 0.0.0-alpha.3
 - Updated `aws-core-utils` dependency to version 7.1.1
 - Updated `aws-stream-consumer-core` dependency to version 2.1.0
