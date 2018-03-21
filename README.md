@@ -1,4 +1,4 @@
-# dynamodb-stream-consumer v0.0.0-alpha.4
+# dynamodb-stream-consumer v0.0.0-alpha.5
 
 Utilities for building robust AWS Lambda consumers of stream events from Amazon Web Services (AWS) DynamoDB streams.
 
@@ -211,4 +211,4 @@ $ tape test/*.js
 See the [package source](https://github.com/byron-dupreez/dynamodb-stream-consumer) for more details.
 
 ## Changes
-See [release_notes.md](./release_notes.md)
+See [CHANGES.md](CHANGES.md)

@@ -1,6 +1,6 @@
 {
   "name": "dynamodb-stream-consumer",
-  "version": "0.0.0-alpha.4",
+  "version": "0.0.0-alpha.5",
   "description": "Utilities for building robust AWS Lambda consumers of stream events from Amazon Web Services (AWS) DynamoDB streams",
   "author": "Byron du Preez",
   "license": "Apache-2.0",
@@ -12,15 +12,15 @@
     "test": "tape ./test/*.test.js"
   },
   "dependencies": {
-    "aws-core-utils": "7.2.0",
-    "aws-stream-consumer-core": "2.1.1",
-    "core-functions": "3.0.22",
+    "aws-core-utils": "8.0.0",
+    "aws-stream-consumer-core": "2.1.2",
+    "core-functions": "3.0.23",
     "deep-equal": "1.0.1",
     "lodash.flatmap": "4.5.0",
     "lodash.groupby": "4.6.0",
     "lodash.uniq": "4.5.0",
-    "logging-utils": "4.0.22",
-    "task-utils": "7.0.4"
+    "logging-utils": "4.0.23",
+    "task-utils": "7.0.5"
   },
   "devDependencies": {
     "aws-sdk": "2.190.0",

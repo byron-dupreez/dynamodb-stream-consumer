@@ -1,5 +1,10 @@
 ## Changes
 
+### 0.0.0-alpha.5
+- Added `.npmignore`
+- Renamed `release_notes.md` to `CHANGES.md`
+- Updated dependencies
+
 ### 0.0.0-alpha.4
 - Updated `aws-core-utils` dependency to version 7.2.0
 - Updated `aws-stream-consumer-core` dependency to version 2.1.1
