@@ -1,5 +1,8 @@
 ## Changes
 
+### 0.0.0-alpha.6
+- Updated dependencies
+
 ### 0.0.0-alpha.5
 - Added `.npmignore`
 - Renamed `release_notes.md` to `CHANGES.md`
