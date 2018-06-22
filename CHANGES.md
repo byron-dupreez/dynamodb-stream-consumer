@@ -1,5 +1,8 @@
 ## Changes
 
+### 0.0.0-alpha.9
+- Updated dependencies
+
 ### 0.0.0-alpha.8
 - Updated dependencies
 
